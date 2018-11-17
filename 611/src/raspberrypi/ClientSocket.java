@@ -10,27 +10,10 @@ import com.pi4j.io.gpio.RaspiPin;
 import com.pi4j.io.gpio.PinPullResistance;
 
 public class ClientSocket {
-	
+//LOCAL EXECUTIONNNNNNNNNNNNN	
 	
   public static void run() {
-	  
-		//initialize  and set leds to LOW 
-	  GpioController gController = GpioFactory.getInstance();
-	  
-    ledController.redpin=   gController.provisionDigitalOutputPin(RaspiPin.GPIO_24,"redLed",
- 		   PinState.LOW);
-    
-    ledController.yellowpin=   gController.provisionDigitalOutputPin(RaspiPin.GPIO_23,"redLed",
-    		   PinState.LOW);
-    
-   ledController.greenpin =   gController.provisionDigitalOutputPin(RaspiPin.GPIO_25,"redLed",
-    		   PinState.LOW);
-		  
-		  
-		  ledController.redpin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
-		  ledController.yellowpin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
-		  ledController.redpin.setShutdownOptions(true, PinState.LOW, PinPullResistance.OFF);
-		  
+
 		  
 	try {
 		int serverPort = 9999;
@@ -53,6 +36,9 @@ public class ClientSocket {
 		
 		PrintWriter out = 
 			new PrintWriter(socket.getOutputStream(),true);
+		
+		
+         
 		BufferedReader inBuffer = 
 			new BufferedReader(
 					new InputStreamReader(socket.getInputStream()));
@@ -68,20 +54,26 @@ public class ClientSocket {
 		{
 		String[] requestFromServer = line.split("#") ; 
 		
-		if(requestFromServer[0].equalsIgnoreCase("getStatus"))
+		if(requestFromServer[0].equalsIgnoreCase("sendStatus"))
 		{
-			//read from sensor  
-			System.out.println("getting leds pinstate");
-			String ledStatus = ledController.getLedStatus();
+			InetAddress hos = InetAddress.getByName("192.168.1.187"); 
 			
+			Socket sock = new Socket(hos,10000); 
 			
-			
+		    ObjectOutputStream outputStream = new ObjectOutputStream(sock.getOutputStream());
+			/*PrintWriter out1 = 
+					new PrintWriter(socket.getOutputStream(),true);*/
 			 
 			//SensorReading.testRaspberrypi();
 			
 			//send reading back to server : 
-			out.println(ledStatus);
+		    outputStream.writeObject("pi1#"+line);
+		    outputStream.flush();
+			
+			out.println("suceesss");
 			out.flush();
+			
+			
 		}
 		else if(requestFromServer[0].equalsIgnoreCase("override"))
 		{
@@ -95,6 +87,9 @@ public class ClientSocket {
 			out.flush();
 			
 			
+		}else
+		{
+			System.out.print("unknown request");
 		}
 		
 		}
