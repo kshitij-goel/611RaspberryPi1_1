@@ -16,41 +16,40 @@ public class clientHelper  implements Runnable {
 	
 	final static GpioController gpio = GpioFactory.getInstance();
 	
-	public void run() {
-		System.out.println("clientHelper run");
 	
-		triggerPin =  gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04); // Trigger pin as OUTPUT
-		echoPin = gpio.provisionDigitalInputPin(RaspiPin.GPIO_05,PinPullResistance.PULL_DOWN); // Echo pin as INPUT
+	@SuppressWarnings("deprecation")
+	public void run() {
+		
+		
+		System.out.println("clientHelper Thread started");
+	    clientHelper.initializeTriggerpin();
 		int serverPort = 9999;
 		InetAddress host = null;
-		
-
-		
-		
-		
-		
 		while(true){
 			
-			
-			/*try {
-				host = InetAddress.getByName("localhost");
-			} catch (UnknownHostException e2) {
-				// TODO Auto-generated catch block
-				e2.printStackTrace();
-			} 
-			   Socket sock = null;
-		       try {
-				sock = new Socket(host,serverPort);
-			} catch (IOException e1) {
-				// TODO Auto-generated catch block
+			byte[] ipAddr = new byte[] { (byte) 192, (byte) 168, (byte)1, (byte) 187 };
+            InetAddress hos=null;
+			try {
+				hos = InetAddress.getByAddress(ipAddr);
+			} catch (UnknownHostException e1) {
 				e1.printStackTrace();
-			} */
+			} 
+			
+			    Socket sock=null;
+			    ObjectOutputStream outputStream=null;
+				try {
+					sock = new Socket(hos,50000);
+					 outputStream  = new ObjectOutputStream(sock.getOutputStream());	
+				} 
+				catch (IOException e1) {
+					System.out.println(" ClientHelper  try hub not alive");
+					Main.startBackgroundTask=true;
+				} 
+
+	       
 			
 			try {
-		   // System.out.println("initial status ");
-			//System.out.println(ledController.getLedStatus());
-						
-			//Thread.sleep(2000);
+		  
 			triggerPin.high(); // Make trigger pin HIGH
 			Thread.sleep((long) 0.01);// Delay for 10 microseconds
 			triggerPin.low(); 
@@ -64,16 +63,7 @@ public class clientHelper  implements Runnable {
 			}
 			long endTime= System.nanoTime(); 
 			double distance = (((endTime-startTime)/1e3)/2) / 29.1 ;
-		
-			//System.out.println("Distance :"+((((endTime-startTime)/1e3)/2) / 29.1) +" cm"); 
-			//send status to hub 
-			/*
-			byte[] ipAddr = new byte[] { (byte) 127, (byte) 0, (byte)0, (byte) 1 };
-            InetAddress hos = InetAddress.getByAddress(ipAddr); 
-			Socket sock = new Socket(hos,9999); 
-			
-			
-		*/	
+	
 		    
 			
 		
@@ -101,7 +91,7 @@ public class clientHelper  implements Runnable {
     				
     			
     				
-    			}//end if >=170
+    			}//end if green range
     			else if(distance <= 50 && distance >15)
     			{
     				//yellow
@@ -121,11 +111,7 @@ public class clientHelper  implements Runnable {
     					ledController.yellowpin.toggle();
     				}
     				
-    				
-    				//System.out.println(ledController.getLedStatus());
-    				
-    				
-    			}//end if 200
+    			}//end if yellow range
     			
     			
     			else if(distance >= 2 && distance <= 15)
@@ -151,7 +137,7 @@ public class clientHelper  implements Runnable {
     				
     				
     				
-    			}//end if 200
+    			}//end if red range
     			else
     			{
     				//switch off all led 
@@ -186,35 +172,51 @@ public class clientHelper  implements Runnable {
 			   StringBuilder sb = new StringBuilder() ;
 	      	   sb.append("pi1");
 	      	   sb.append("#");
-	      	   sb.append("updates");
+	      	   sb.append("update");
 	      	   sb.append("#");
 	      	   sb.append(macaddress);  //mac value
 	      	   sb.append("#");
+	      	   sb.append("override");
+	      	   sb.append("#");
+	      	   sb.append(Main.globalOverride);
+	           sb.append("#");
 	      	   sb.append(ledStatus);
 	      	   sb.append("#");
                sb.append("sensor");
                sb.append("#");
                sb.append(String.valueOf(distance)); //ultrasonic sensor max value 
-               byte[] ipAddr = new byte[] { (byte) 192, (byte) 168, (byte)1, (byte) 187 };
-               InetAddress hos = InetAddress.getByAddress(ipAddr); 
-   			
-   			    Socket sock = new Socket(hos,50000); 
-	        	ObjectOutputStream outputStream  = new ObjectOutputStream(sock.getOutputStream());
+               
+               
+                
 	            outputStream.writeObject(sb.toString()); 
 	            outputStream.flush();
-	            outputStream.close();
-	            sock.close();
-            
+	            System.out.println("sent updates");
+			    System.out.println(sb.toString());
+			    Thread.sleep(3000);
 			
-			Thread.sleep(5000);
-			
-		} catch (Exception e) {
-			System.out.println(e);
-			}
+		 }catch(UnknownHostException ex) {
+			 System.out.println(" clientHelper 2  unknownHostException");
+		}
+		catch(IOException e){
+			System.out.println(" clientHelper IOEXCEPTION");
+			Main.startBackgroundTask=true;
+		} catch (InterruptedException e) {
+			System.out.println(" clientHelper InterruptedException");
+			Main.startBackgroundTask=true;
+		}
 		}
      
 	}//end run 
 	
-
+	public static void initializeTriggerpin()
+	{
+		if(Main.isTriggerInitialized)
+		{
+		triggerPin =  gpio.provisionDigitalOutputPin(RaspiPin.GPIO_04); // Trigger pin as OUTPUT
+		echoPin = gpio.provisionDigitalInputPin(RaspiPin.GPIO_05,PinPullResistance.PULL_DOWN); // Echo pin as INPUT
+		Main.isTriggerInitialized=false;
+		}
+		
+	}
 
 }
